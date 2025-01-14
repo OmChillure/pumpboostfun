@@ -51,7 +51,7 @@ const TokenList = () => {
     <div className="w-full min-h-screen bg-[#ADB3A9] text-gray-800">
       <div className="w-[90vw] mx-auto px-4 py-8 space-y-8">
         <div className="text-center">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 font-sans">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 font-sans">
             All Projects
           </h1>
           <p className="text-xl text-gray-600 mb-8 font-serif">
@@ -76,7 +76,7 @@ const TokenList = () => {
           {tokens.map((token) => (
             <div
               key={token._id?.toString()}
-              className="group relative rounded-lg bg-white shadow-md hover:shadow-lg p-6 transition-all duration-300 min-h-[270px] flex flex-col justify-between"
+              className="group relative rounded-lg bg-white shadow-md hover:shadow-lg p-6 transition-all duration-300 min-h-[300px] flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center gap-4">
@@ -154,7 +154,7 @@ const TokenList = () => {
                     <div className="absolute inset-0 bg-gradient-to-r from-gray-800 via-gray-900 to-black opacity-90"></div>
                     <div className="relative z-10 p-2 text-center">
                       <p className="text-white text-sm font-semibold">
-                        This token is being boosted 10x
+                        This token is boosted {token.wallets.length}x  
                       </p>
                       <p className="text-white text-xs">
                         Every 10 minutes !!!
@@ -172,4 +172,3 @@ const TokenList = () => {
 };
 
 export default TokenList;
-
