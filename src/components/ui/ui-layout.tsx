@@ -15,6 +15,7 @@ import {
   WalletButton,
 } from "../solana/solana-provider";
 import { IconBrandX } from "@tabler/icons-react";
+import Image from "next/image";
 
 export function UiLayout({
   children,
@@ -27,11 +28,11 @@ export function UiLayout({
   const walletConnected = checkWalletConnection();
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="navbar bg-base-300 text-neutral-content flex-col md:flex-row space-y-2 md:space-y-0">
+    <div className="min-h-screen flex flex-col bg-[#ADB3A9]">
+      <div className="navbar bg-[#ADB3A9] text-gray-800 flex-col md:flex-row space-y-2 md:space-y-0 px-4 py-2">
         <div className="flex-1">
           <Link className="btn btn-ghost normal-case text-xl" href="/">
-            <div className="h-4 md:h-6">LOGO</div>
+            <Image src={"/pump.png"} alt="logo" height={50} width={50}></Image>
           </Link>
           <ul className="menu menu-horizontal px-1 space-x-2">
             {links.map(({ label, path }) => (
@@ -46,14 +47,20 @@ export function UiLayout({
             ))}
           </ul>
         </div>
-        <div className="gap-4">
-          <button className="px-4 py-2 bg-gray-800 text-white rounded-lg focus:outline-none">
+        <div className="gap-3">
+          <Link
+            target="_blank"
+            rel="noopener noreferrer"
+            href={"https://x.com/pumpboostfun"}
+          >
+            <button className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-opacity-50">
+              <IconBrandX />
+            </button>
+          </Link>
+          <button className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-opacity-50">
             <Link href="/create">Profile</Link>
           </button>
-          <button className="px-4 py-2 bg-gray-800 text-white rounded-lg focus:outline-none">
-            <IconBrandX />
-          </button>
-          <button className="px-4 py-2 bg-gray-800 text-white rounded-lg focus:outline-none">
+          <button className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-opacity-50">
             <Link href="/create">Launch Token</Link>
           </button>
           <div className="flex-none space-x-2">
@@ -61,7 +68,7 @@ export function UiLayout({
               style={{
                 backgroundColor: "#000000",
                 padding: "0px 10px",
-                borderRadius: "1px",
+                borderRadius: "4px",
                 width: "8rem",
                 height: "42px",
                 border: "1px solid rgba(55, 65, 81, 0.5)",
@@ -80,7 +87,7 @@ export function UiLayout({
         <Suspense
           fallback={
             <div className="text-center my-32">
-              <span className="loading loading-spinner loading-lg"></span>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             </div>
           }
         >
@@ -199,3 +206,4 @@ export function useTransactionToast() {
     );
   };
 }
+

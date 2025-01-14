@@ -1,3 +1,5 @@
+import { ObjectId } from "mongodb";
+
 export interface WalletInfo {
   name: string;
   publicKey: string;
@@ -14,7 +16,7 @@ export interface WalletGenerationProgress {
 }
 
 export interface TokenData {
-  _id?: string;
+  _id?: ObjectId;
   tokenName: string;
   tokenSymbol: string;
   tokenDescription?: string;

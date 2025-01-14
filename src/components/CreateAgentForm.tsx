@@ -50,14 +50,13 @@ const WalletGenerator = () => {
       setTime("");
       return;
     }
-    
+
     const numValue = parseInt(value);
     if (!isNaN(numValue)) {
       // Ensure the time is not less than MIN_DELAY
       setTime(Math.max(numValue, MIN_DELAY).toString());
     }
   };
-
 
   const createToken = async (walletInfo: WalletInfo, file: File) => {
     try {
@@ -270,13 +269,13 @@ const WalletGenerator = () => {
   };
 
   return (
-    <div className="w-[50rem] mx-auto space-y-8 font-lexend">
+    <div className="w-[50rem] mx-auto space-y-6 font-lexend text-gray-800 p-8 rounded-lg">
       <div>
-        <div className="text-3xl text-center">
-          Solana Wallet & Token Generator
-        </div>
-        <p className="text-gray-600 dark:text-gray-400 text-center">
-          Generate wallets and create tokens on Solana
+        <h1 className="text-4xl font-bold text-center mb-2">
+          Launch Token
+        </h1>
+        <p className="text-xl text-gray-600 text-center">
+          Create mutiple token in one go and let them market your product.
         </p>
       </div>
       <div>
@@ -310,7 +309,7 @@ const WalletGenerator = () => {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <Upload className="w-8 h-8 text-gray-400" />
+                      <Upload className="w-8 h-8 " />
                     )}
                   </label>
                 </div>
@@ -329,7 +328,7 @@ const WalletGenerator = () => {
                   id="tokenName"
                   type="text"
                   placeholder="Enter token name"
-                  className="w-full px-3 py-2 bg-[#94A3B8]/5 rounded-[10px] border border-gray-700/10 h-14 text-gray-300 placeholder-[#94A3B8]/20 focus:outline-none"
+                  className="w-full px-3 py-2 bg-white/90 rounded-[10px] border border-gray-400 h-14 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600"
                   value={tokenName}
                   onChange={(e) => setTokenName(e.target.value)}
                 />
@@ -348,7 +347,7 @@ const WalletGenerator = () => {
                     id="tokenSymbol"
                     type="text"
                     placeholder="Enter token symbol"
-                    className="w-full pl-10 pr-3 py-2 bg-[#94A3B8]/5 rounded-[10px] border border-gray-700/10 h-14 text-gray-300 placeholder-[#94A3B8]/20 focus:outline-none"
+                    className="w-full pl-10 pr-3 py-2 bg-white/90 rounded-[10px] border border-gray-400 h-14 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600"
                     value={tokenSymbol}
                     onChange={(e) => setTokenSymbol(e.target.value)}
                   />
@@ -363,7 +362,7 @@ const WalletGenerator = () => {
               <textarea
                 id="tokenDesc"
                 placeholder="Enter token description"
-                className="w-full px-3 py-2 border rounded-md min-h-[100px] bg-[#94A3B8]/5 border-gray-700/10 text-gray-300 placeholder-[#94A3B8]/20 focus:outline-none"
+                className="w-full px-3 py-2 border rounded-md min-h-[100px] bg-white/90 border-gray-400 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600"
                 value={tokenDesc}
                 onChange={(e) => setTokenDesc(e.target.value)}
               />
@@ -382,7 +381,7 @@ const WalletGenerator = () => {
                   id="walletCount"
                   type="number"
                   placeholder="Enter number of wallets"
-                  className="w-full pl-10 pr-3 py-2 bg-[#94A3B8]/5 rounded-[10px] border border-gray-700/10 h-14 text-gray-300 placeholder-[#94A3B8]/20 focus:outline-none"
+                  className="w-full pl-10 pr-3 py-2 bg-white/90 rounded-[10px] border border-gray-400 h-14 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600"
                   value={walletCount}
                   onChange={(e) => setWalletCount(e.target.value)}
                   min="1"
@@ -400,7 +399,7 @@ const WalletGenerator = () => {
                   id="walletCount"
                   type="number"
                   placeholder="Enter the time for each token launch"
-                  className="w-full pl-10 pr-3 py-2 bg-[#94A3B8]/5 rounded-[10px] border border-gray-700/10 h-14 text-gray-300 placeholder-[#94A3B8]/20 focus:outline-none"
+                  className="w-full pl-10 pr-3 py-2 bg-white/90 rounded-[10px] border border-gray-400 h-14 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
                   // onChange={handleTimeChange}
@@ -424,7 +423,7 @@ const WalletGenerator = () => {
                   placeholder="https://x.com/.."
                   value={twitterLink}
                   onChange={(e) => setTwitterLink(e.target.value)}
-                  className="w-full bg-[#94A3B8]/5 border border-gray-700/10 rounded-[10px] px-4 h-14 text-gray-300 placeholder-[#94A3B8]/20 font-medium font-roboto focus:outline-none"
+                  className="w-full bg-white/90 border border-gray-400 rounded-[10px] px-4 h-14 text-gray-800 placeholder-gray-500 font-medium font-roboto focus:outline-none focus:ring-2 focus:ring-gray-600"
                 />
               </div>
 
@@ -437,7 +436,7 @@ const WalletGenerator = () => {
                   placeholder="https://yourwebsite.com"
                   value={websiteLink}
                   onChange={(e) => setWebsiteLink(e.target.value)}
-                  className="w-full bg-[#94A3B8]/5 border border-gray-700/10 rounded-[10px] px-4 h-14 text-gray-300 placeholder-[#94A3B8]/20 font-medium font-roboto focus:outline-none"
+                  className="w-full bg-white/90 border border-gray-400 rounded-[10px] px-4 h-14 text-gray-800 placeholder-gray-500 font-medium font-roboto focus:outline-none focus:ring-2 focus:ring-gray-600"
                 />
               </div>
 
@@ -450,7 +449,7 @@ const WalletGenerator = () => {
                   placeholder="https://t.me/.."
                   value={telegramLink}
                   onChange={(e) => setTelegramLink(e.target.value)}
-                  className="w-full bg-[#94A3B8]/5 border border-gray-700/10 rounded-[10px] px-4 h-14 text-gray-300 placeholder-[#94A3B8]/20 font-medium font-roboto focus:outline-none"
+                  className="w-full bg-white/90 border border-gray-400 rounded-[10px] px-4 h-14 text-gray-800 placeholder-gray-500 font-medium font-roboto focus:outline-none focus:ring-2 focus:ring-gray-600"
                 />
               </div>
             </div>
@@ -459,20 +458,20 @@ const WalletGenerator = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-black text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
+            className="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50"
           >
             {isLoading ? "Processing..." : "Launch Token"}
           </button>
         </form>
 
         {error && (
-          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400">
+          <div className="mt-4 p-4 bg-red-100 border border-red-400 rounded-md text-red-700">
             {error}
           </div>
         )}
 
         {progress.current > 0 && (
-          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+          <div className="mt-4 p-4 bg-blue-100 border border-blue-400 rounded-md text-blue-700">
             <p className="text-blue-600 dark:text-blue-400">
               Progress: {progress.current} / {progress.total} -{" "}
               {progress.status}
@@ -486,7 +485,7 @@ const WalletGenerator = () => {
             {wallets.map((wallet, index) => (
               <div
                 key={wallet.publicKey}
-                className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700"
+                className="p-4 bg-white/90 rounded-lg border border-gray-400 shadow-sm"
               >
                 <p className="font-semibold">{wallet.name}</p>
                 <p className="font-mono text-sm break-all mt-1">

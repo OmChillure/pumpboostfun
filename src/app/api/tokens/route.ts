@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '@/utils/db';
-import { TokenData } from '@/types/token';
+import { TokenData, WalletInfo } from '@/types/token';
 
 export async function POST(request: Request) {
   try {
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       twitterLink: data.twitterLink,
       websiteLink: data.websiteLink,
       telegramLink: data.telegramLink,
-      wallets: data.wallets.map((wallet: { name: any; publicKey: any; balance: any; keypair: any; mint: any; tokenUrl: any; }) => ({
+      wallets: data.wallets.map((wallet: WalletInfo) => ({
         name: wallet.name,
         publicKey: wallet.publicKey,
         balance: wallet.balance,
@@ -39,9 +39,9 @@ export async function POST(request: Request) {
     };
 
     const result = await db.collection('tokens').insertOne(token);
-    console.log("Stored token data:", { ...token, _id: result.insertedId });
+    const insertedToken: TokenData = { ...token, _id: result.insertedId };
     
-    return NextResponse.json({ success: true, data: { ...token, _id: result.insertedId } });
+    return NextResponse.json({ success: true, data: insertedToken });
   } catch (error) {
     console.error('Failed to store token:', error);
     return NextResponse.json(
