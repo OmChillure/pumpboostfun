@@ -29,10 +29,10 @@ export function UiLayout({
 
   return (
     <div className="min-h-screen flex flex-col bg-[#ADB3A9]">
-      <div className="navbar bg-[#ADB3A9] text-gray-800 flex-col md:flex-row space-y-2 md:space-y-0 px-4 py-2">
+      <div className="navbar bg-[#ADB3A9] text-gray-800 flex-col md:flex-row space-y-2 md:space-y-0 px-4 py-2 border-b-2 border-[#8b8b8b]">
         <div className="flex-1">
           <Link className="btn btn-ghost normal-case text-xl" href="/">
-            <Image src={"/pump.png"} alt="logo" height={50} width={50}></Image>
+            <Image src={"/pump.png"} alt="logo" height={55} width={55}></Image>
           </Link>
           <ul className="menu menu-horizontal px-1 space-x-2">
             {links.map(({ label, path }) => (

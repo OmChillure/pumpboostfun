@@ -10,40 +10,38 @@ import {
 } from "@solana/web3.js";
 import { PumpFunSDK } from "pumpdotfun-sdk";
 import { AnchorProvider } from "@coral-xyz/anchor";
+import { getFile, upload } from "@/app/actions";
 
 export async function POST(req: NextRequest) {
-  const tmpDir = path.join(process.cwd(), "tmp");
   let filePath: string | null = null;
   let connection: Connection | null = null;
 
   try {
     console.log("Starting token creation process...");
-
-    if (!fs.existsSync(tmpDir)) {
-      fs.mkdirSync(tmpDir, { recursive: true });
-    }
-
     const data = await req.formData();
     console.log("Form data received");
     console.log("Form data keys:", Array.from(data.keys()));
 
-    const file = data.get("file") as File;
-    if (!file) throw new Error("No file provided");
+    const uploadResult = await upload(data);
+    console.log("File uploaded to IPFS:", uploadResult.hash);
 
-    console.log("File details:", {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    });
+    // const file = data.get("file") as File;
+    // if (!file) throw new Error("No file provided");
 
-    const buffer = new Uint8Array(await file.arrayBuffer());
-    filePath = path.join(tmpDir, `${Date.now()}-${file.name}`);
-    fs.writeFileSync(filePath, buffer);
-    console.log("File saved to:", filePath);
+    // console.log("File details:", {
+    //   name: file.name,
+    //   type: file.type,
+    //   size: file.size,
+    // });
 
-    if (!fs.existsSync(filePath)) {
-      throw new Error("Failed to save file");
-    }
+    // const buffer = new Uint8Array(await file.arrayBuffer());
+    // filePath = path.join(tmpDir, `${Date.now()}-${file.name}`);
+    // fs.writeFileSync(filePath, buffer);
+    // console.log("File saved to:", filePath);
+
+    // if (!fs.existsSync(filePath)) {
+    //   throw new Error("Failed to save file");
+    // }
 
     const walletDataRaw = data.get("walletData");
     if (!walletDataRaw) throw new Error("No wallet data provided");
@@ -70,7 +68,6 @@ export async function POST(req: NextRequest) {
     const mint = Keypair.fromSecretKey(Uint8Array.from(walletData.mint));
     console.log("Keypairs created");
 
-
     const balance = await connection.getBalance(keypair.publicKey);
     console.log("Main account balance:", balance / LAMPORTS_PER_SOL, "SOL");
 
@@ -91,7 +88,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (balance <  0.0001 * LAMPORTS_PER_SOL) {
+    if (balance < 0.0001 * LAMPORTS_PER_SOL) {
       throw new Error(
         `Insufficient balance: ${balance / LAMPORTS_PER_SOL} SOL`
       );
@@ -120,8 +117,8 @@ export async function POST(req: NextRequest) {
     const sdk = new PumpFunSDK(provider);
     console.log("SDK initialized");
 
-    const stream = fs.readFileSync(filePath);
-    const fileBlob = new Blob([stream], { type: file.type });
+    const ipfsData = await getFile(uploadResult.hash,"application/octet-stream");
+    const fileBlob = new Blob([JSON.stringify(ipfsData)], {type: "application/octet-stream", });
 
     const tokenMetadata = {
       name: data.get("tokenName") as string,

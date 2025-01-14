@@ -11,6 +11,7 @@ import {
 import { WalletInfo } from "@/lib/types";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
+import Loader from "@/components/Loader";
 
 const TokenList = () => {
   const [tokens, setTokens] = useState<TokenData[]>([]);
@@ -19,14 +20,14 @@ const TokenList = () => {
   const [wallets, setWallets] = useState<WalletInfo[]>([]);
   const { publicKey, signTransaction, connected } = useWallet();
 
-  function formatWalletAddress(walletAddress : any) {
+  function formatWalletAddress(walletAddress: any) {
     if (walletAddress && walletAddress.length > 8) {
-        const start = walletAddress.slice(0, 4); 
-        const end = walletAddress.slice(-4); 
-        return `${start}.....${end}`;
+      const start = walletAddress.slice(0, 4);
+      const end = walletAddress.slice(-4);
+      return `${start}.....${end}`;
     }
-    return walletAddress; 
-}
+    return walletAddress;
+  }
 
   const fetchTokens = async () => {
     try {
@@ -39,24 +40,41 @@ const TokenList = () => {
       }
     } catch (error) {
       console.error("Failed to fetch tokens:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTokens();
+    let loadingTimer: NodeJS.Timeout;
+    let dataFetched = false;
+
+    const loadData = async () => {
+      await fetchTokens();
+      dataFetched = true;
+    };
+
+    loadingTimer = setTimeout(() => {
+      if (dataFetched) {
+        setLoading(false);
+      } else {
+        const checkDataInterval = setInterval(() => {
+          if (dataFetched) {
+            setLoading(false);
+            clearInterval(checkDataInterval);
+          }
+        }, 100);
+      }
+    }, 1000);
+
+    loadData();
+
+    return () => {
+      clearTimeout(loadingTimer);
+    };
   }, [search]);
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-[#ADB3A9]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-700"></div>
-      </div>
-    );
+    return <Loader />;
   }
-
-  
 
   return (
     <div className="w-full min-h-screen bg-[#ADB3A9] text-gray-800">
