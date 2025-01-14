@@ -18,7 +18,7 @@ if (!RPC_URL) {
   throw new Error("NEXT_PUBLIC_HELIUS_RPC_URL environment variable is not set");
 }
 
-const AMOUNT_PER_WALLET = 0.025 * LAMPORTS_PER_SOL;
+const AMOUNT_PER_WALLET = 0.035 * LAMPORTS_PER_SOL;
 const MIN_DELAY = 5000;
 
 const WalletGenerator = () => {
@@ -45,7 +45,6 @@ const WalletGenerator = () => {
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Allow empty input for better user experience
     if (value === "") {
       setTime("");
       return;
@@ -53,7 +52,6 @@ const WalletGenerator = () => {
 
     const numValue = parseInt(value);
     if (!isNaN(numValue)) {
-      // Ensure the time is not less than MIN_DELAY
       setTime(Math.max(numValue, MIN_DELAY).toString());
     }
   };
@@ -231,6 +229,8 @@ const WalletGenerator = () => {
         websiteLink,
         telegramLink,
         wallets: generatedWallets,
+        launchInterval: parseInt(time) || MIN_DELAY,
+        fundingWallet: publicKey.toString()
       };
 
       console.log("Storing token data:", tokenData);

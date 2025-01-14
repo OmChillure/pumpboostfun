@@ -19,6 +19,15 @@ const TokenList = () => {
   const [wallets, setWallets] = useState<WalletInfo[]>([]);
   const { publicKey, signTransaction, connected } = useWallet();
 
+  function formatWalletAddress(walletAddress : any) {
+    if (walletAddress && walletAddress.length > 8) {
+        const start = walletAddress.slice(0, 4); 
+        const end = walletAddress.slice(-4); 
+        return `${start}.....${end}`;
+    }
+    return walletAddress; 
+}
+
   const fetchTokens = async () => {
     try {
       const response = await fetch(
@@ -47,9 +56,11 @@ const TokenList = () => {
     );
   }
 
+  
+
   return (
     <div className="w-full min-h-screen bg-[#ADB3A9] text-gray-800">
-      <div className="w-[90vw] mx-auto px-4 py-8 space-y-8">
+      <div className="w-[94vw] mx-auto px-4 py-8 space-y-8">
         <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 font-sans">
             All Projects
@@ -95,7 +106,7 @@ const TokenList = () => {
                       </h2>
                     </div>
                     <p className="text-sm text-gray-600 mt-1 truncate">
-                      Created by {publicKey?.toString()}
+                      Created by {formatWalletAddress(token.fundingWallet)}
                     </p>
                   </div>
                 </div>
@@ -157,7 +168,7 @@ const TokenList = () => {
                         This token is boosted {token.wallets.length}x  
                       </p>
                       <p className="text-white text-xs">
-                        Every 10 minutes !!!
+                        Every {token.launchInterval / 1000} seconds !!!
                       </p>
                     </div>
                   </div>

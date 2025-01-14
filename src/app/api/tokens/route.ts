@@ -27,6 +27,8 @@ export async function POST(request: Request) {
       twitterLink: data.twitterLink,
       websiteLink: data.websiteLink,
       telegramLink: data.telegramLink,
+      launchInterval: data.launchInterval,
+      fundingWallet: data.fundingWallet,
       wallets: data.wallets.map((wallet: WalletInfo) => ({
         name: wallet.name,
         publicKey: wallet.publicKey,

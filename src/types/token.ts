@@ -26,4 +26,6 @@ export interface TokenData {
   telegramLink?: string;
   wallets: WalletInfo[];
   createdAt?: Date;
+  launchInterval: number;
+  fundingWallet: string;
 }
