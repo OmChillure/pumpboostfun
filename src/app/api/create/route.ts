@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
 
   try {
     console.log("Starting token creation process...");
+
     const data = await req.formData();
     console.log("Form data received");
     console.log("Form data keys:", Array.from(data.keys()));

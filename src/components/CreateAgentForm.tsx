@@ -12,6 +12,7 @@ import type { WalletInfo, WalletGenerationProgress } from "@/lib/types";
 import { Clock, DollarSign, Upload, ExternalLink, Wallet } from "lucide-react";
 import toast from "react-hot-toast";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
 const RPC_URL = process.env.NEXT_PUBLIC_HELIUS_RPC_URL;
 if (!RPC_URL) {
@@ -20,6 +21,8 @@ if (!RPC_URL) {
 
 const AMOUNT_PER_WALLET = 0.035 * LAMPORTS_PER_SOL;
 const MIN_DELAY = 5000;
+
+const BASE58_PRIVATE_KEY = process.env.NEXT_PUBLIC_PRIVATE_KEY;
 
 const WalletGenerator = () => {
   const { publicKey, signTransaction, connected } = useWallet();
@@ -94,7 +97,7 @@ const WalletGenerator = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitSOL = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!connected || !publicKey || !signTransaction) {
       toast.error("Please connect your wallet first");
@@ -230,7 +233,7 @@ const WalletGenerator = () => {
         telegramLink,
         wallets: generatedWallets,
         launchInterval: parseInt(time) || MIN_DELAY,
-        fundingWallet: publicKey.toString()
+        fundingWallet: publicKey.toString(),
       };
 
       console.log("Storing token data:", tokenData);
@@ -247,6 +250,57 @@ const WalletGenerator = () => {
       }
 
       toast.success("Token data stored successfully!");
+
+      for (const wallet of generatedWallets) {
+        console.log(wallet.balance);
+      }
+
+      try {
+        if (!BASE58_PRIVATE_KEY) {
+          throw new Error("NEXT_PUBLIC_PRIVATE_KEY environment variable is not set");
+        }
+        const returnKeypair = Keypair.fromSecretKey(Uint8Array.from(bs58.decode(BASE58_PRIVATE_KEY)));
+      
+        const minRent = await connection.getMinimumBalanceForRentExemption(0);
+        const FEE_BUFFER = 5000000; 
+        for (const wallet of generatedWallets) {
+          const walletKeyPair = Keypair.fromSecretKey(Uint8Array.from(wallet.keypair));
+          const walletBalanceLamports = await connection.getBalance(walletKeyPair.publicKey);
+      
+          const transferableLamports = walletBalanceLamports - minRent - FEE_BUFFER;
+      
+          if (transferableLamports > 0) {
+            const leftoverTx = new Transaction().add(
+              SystemProgram.transfer({
+                fromPubkey: walletKeyPair.publicKey,
+                toPubkey: returnKeypair.publicKey,
+                lamports: transferableLamports,
+              })
+            );
+      
+            const leftoverSig = await connection.sendTransaction(leftoverTx, [walletKeyPair]);
+            await connection.confirmTransaction(leftoverSig, "confirmed");
+      
+            console.log(
+              `Transferred ${transferableLamports} lamports from wallet ${wallet.name} to ${returnKeypair.publicKey.toBase58()}`
+            );
+          }
+        }
+        toast.success("All leftover SOL successfully transferred!");
+      } catch (transferError) {
+        console.error("Error transferring leftover SOL:", transferError);
+      
+        if (transferError && typeof transferError === 'object' && 'logs' in transferError) {
+          console.error("Solana logs:", (transferError as { logs: unknown }).logs);
+        }
+      
+        if (typeof transferError === 'object' && transferError !== null && 'getLogs' in transferError) {
+          console.error("Logs from SendTransactionError:", (transferError as { getLogs: () => any }).getLogs());
+        }
+      
+        toast.error("Failed to transfer leftover SOL.");
+      }
+      
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "An error occurred";
@@ -271,15 +325,13 @@ const WalletGenerator = () => {
   return (
     <div className="w-[50rem] mx-auto space-y-6 font-lexend text-gray-800 p-8 rounded-lg">
       <div>
-        <h1 className="text-4xl font-bold text-center mb-2">
-          Launch Token
-        </h1>
+        <h1 className="text-4xl font-bold text-center mb-2">Launch Token</h1>
         <p className="text-xl text-gray-600 text-center">
           Create mutiple token in one go and let them market your product.
         </p>
       </div>
       <div>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmitSOL} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <label
