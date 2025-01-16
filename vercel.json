@@ -1,0 +1,7 @@
+{
+    "functions": {
+      "app/src/api/**/*": {
+        "maxDuration": 60
+      }
+    }
+  }
