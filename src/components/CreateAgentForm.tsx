@@ -24,7 +24,7 @@ if (!RPC_URL) {
   throw new Error("NEXT_PUBLIC_HELIUS_RPC_URL environment variable is not set");
 }
 
-const AMOUNT_PER_WALLET = 0.025 * LAMPORTS_PER_SOL;
+const AMOUNT_PER_WALLET = 0.035 * LAMPORTS_PER_SOL;
 const MIN_DELAY_SECONDS = 5;
 const MIN_DELAY = MIN_DELAY_SECONDS * 1000;
 const BASE58_PRIVATE_KEY = process.env.NEXT_PUBLIC_PRIVATE_KEY;
@@ -158,7 +158,7 @@ const WalletGenerator = () => {
 
       if (fundingWalletBalance < totalAmount) {
         throw new Error(
-          `Insufficient balance. Required: ${
+          `Insufficient balance in main wallet. Required: ${
             totalAmount / LAMPORTS_PER_SOL
           } SOL`
         );

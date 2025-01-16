@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
     console.log("Main account balance:", balance / LAMPORTS_PER_SOL, "SOL");
 
     if (balance < 0.0001 * LAMPORTS_PER_SOL) {
-      throw new Error(`Insufficient balance: ${balance / LAMPORTS_PER_SOL} SOL`);
+      throw new Error(`Insufficient balance in subsidary wallet: ${balance / LAMPORTS_PER_SOL} SOL`);
     }
 
     const walletInstance = {
