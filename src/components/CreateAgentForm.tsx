@@ -121,6 +121,21 @@ const WalletGenerator = () => {
       return;
     }
 
+    // Add this near the start of handleSubmitSOL
+    try {
+      const connection = new Connection(RPC_URL);
+      const cluster = await connection.getClusterNodes();
+      console.log("Connected to cluster:", cluster[0]?.gossip);
+
+      if (!cluster.length) {
+        throw new Error("Failed to connect to Solana cluster");
+      }
+    } catch (error) {
+      console.error("Cluster verification failed:", error);
+      toast.error("Failed to connect to Solana network. Please try again.");
+      return;
+    }
+
     setError("");
     setStatus("");
     setWallets([]);
@@ -214,7 +229,7 @@ const WalletGenerator = () => {
       const signature = await connection.sendRawTransaction(
         signed.serialize(),
         {
-          skipPreflight: false,
+          skipPreflight: true,
           preflightCommitment: "confirmed",
         }
       );
