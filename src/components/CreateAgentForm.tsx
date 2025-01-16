@@ -106,6 +106,9 @@ const WalletGenerator = () => {
   //pay using sol
   const handleSubmitSOL = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Starting handleSubmitSOL");
+    console.log("Wallet connected:", connected);
+    console.log("Public key:", publicKey?.toString());
     if (!connected || !publicKey || !signTransaction) {
       toast.error("Please connect your wallet first");
       return;
@@ -134,6 +137,43 @@ const WalletGenerator = () => {
       console.error("Cluster verification failed:", error);
       toast.error("Failed to connect to Solana network. Please try again.");
       return;
+    }
+
+    const getConnection = () => {
+      const endpoints = [
+        process.env.NEXT_PUBLIC_HELIUS_RPC_URL,
+        'https://api.devnet.solana.com',
+        'https://devnet.solana.com'
+      ];
+    
+      for (const endpoint of endpoints) {
+        if (!endpoint) continue;
+        try {
+          return new Connection(endpoint, {
+            commitment: 'processed',
+            confirmTransactionInitialTimeout: 60000,
+          });
+        } catch (err) {
+          console.error(`Failed to connect to ${endpoint}:`, err);
+        }
+      }
+      throw new Error('Failed to establish connection to any RPC endpoint');
+    };
+    
+    if (publicKey) {
+      try {
+        const connection = getConnection();
+        const balance = await connection.getBalance(publicKey);
+        console.log("Current wallet balance:", balance / LAMPORTS_PER_SOL, "SOL");
+        
+        // Also log required amount
+        const count = parseInt(walletCount);
+        const requiredAmount = count * AMOUNT_PER_WALLET;
+        console.log("Required amount:", requiredAmount / LAMPORTS_PER_SOL, "SOL");
+        
+      } catch (error) {
+        console.error("Error checking balance:", error);
+      }
     }
 
     setError("");
