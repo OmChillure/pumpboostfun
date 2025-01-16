@@ -13,11 +13,6 @@ import { Clock, DollarSign, Upload, ExternalLink, Wallet } from "lucide-react";
 import toast from "react-hot-toast";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
-import {
-  createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddress,
-  createTransferInstruction,
-} from "@solana/spl-token";
 
 const RPC_URL = process.env.NEXT_PUBLIC_HELIUS_RPC_URL;
 if (!RPC_URL) {
@@ -95,12 +90,6 @@ const WalletGenerator = () => {
       console.error("Token creation error:", error);
       throw error;
     }
-  };
-
-  const getTimeInMilliseconds = (seconds: string) => {
-    const parsedSeconds = parseInt(seconds);
-    if (isNaN(parsedSeconds)) return MIN_DELAY;
-    return Math.max(parsedSeconds, MIN_DELAY_SECONDS) * 1000;
   };
 
   //pay using sol
