@@ -109,27 +109,28 @@ const WalletGenerator = () => {
     console.log("Starting handleSubmitSOL");
     console.log("Wallet connected:", connected);
     console.log("Public key:", publicKey?.toString());
+  
     if (!connected || !publicKey || !signTransaction) {
       toast.error("Please connect your wallet first");
       return;
     }
-
+  
     if (!fileInputRef.current?.files?.[0]) {
       toast.error("Please select a token image");
       return;
     }
-
+  
     if (!tokenName || !tokenSymbol) {
       toast.error("Please enter token name and symbol");
       return;
     }
-
+  
     // Add this near the start of handleSubmitSOL
     try {
       const connection = new Connection(RPC_URL);
       const cluster = await connection.getClusterNodes();
       console.log("Connected to cluster:", cluster[0]?.gossip);
-
+  
       if (!cluster.length) {
         throw new Error("Failed to connect to Solana cluster");
       }
@@ -138,60 +139,23 @@ const WalletGenerator = () => {
       toast.error("Failed to connect to Solana network. Please try again.");
       return;
     }
-
-    const getConnection = () => {
-      const endpoints = [
-        process.env.NEXT_PUBLIC_HELIUS_RPC_URL,
-        'https://api.devnet.solana.com',
-        'https://devnet.solana.com'
-      ];
-    
-      for (const endpoint of endpoints) {
-        if (!endpoint) continue;
-        try {
-          return new Connection(endpoint, {
-            commitment: 'processed',
-            confirmTransactionInitialTimeout: 60000,
-          });
-        } catch (err) {
-          console.error(`Failed to connect to ${endpoint}:`, err);
-        }
-      }
-      throw new Error('Failed to establish connection to any RPC endpoint');
-    };
-    
-    if (publicKey) {
-      try {
-        const connection = getConnection();
-        const balance = await connection.getBalance(publicKey);
-        console.log("Current wallet balance:", balance / LAMPORTS_PER_SOL, "SOL");
-        
-        // Also log required amount
-        const count = parseInt(walletCount);
-        const requiredAmount = count * AMOUNT_PER_WALLET;
-        console.log("Required amount:", requiredAmount / LAMPORTS_PER_SOL, "SOL");
-        
-      } catch (error) {
-        console.error("Error checking balance:", error);
-      }
-    }
-
+  
     setError("");
     setStatus("");
     setWallets([]);
     setIsLoading(true);
     setProgress({ current: 0, total: 0, status: "Starting..." });
-
+  
     let generatedWallets: WalletInfo[] = [];
-
+  
     try {
       const count = parseInt(walletCount);
       if (isNaN(count) || count <= 0) {
         throw new Error("Please enter a valid positive number of wallets");
       }
-
+  
       setProgress({ current: 0, total: count, status: "Initializing..." });
-
+  
       // Enhanced connection setup with retry
       let connection: Connection | null = null;
       let retryCount = 0;
@@ -207,25 +171,31 @@ const WalletGenerator = () => {
         }
       }
       if (!connection) throw new Error("Failed to establish connection");
-
+  
       const totalAmount = count * AMOUNT_PER_WALLET;
       const fundingWalletBalance = await connection.getBalance(publicKey);
-
+  
       if (fundingWalletBalance < totalAmount) {
         throw new Error(
-          `Insufficient balance. Required: ${
-            totalAmount / LAMPORTS_PER_SOL
-          } SOL`
+          `Insufficient balance. Required: ${totalAmount / LAMPORTS_PER_SOL} SOL`
         );
       }
-
-      const transaction = new Transaction();
+  
       const newWallets: WalletInfo[] = [];
-
+      
+      // Process wallets one at a time
       for (let i = 0; i < count; i++) {
+        setProgress({
+          current: i + 1,
+          total: count,
+          status: `Creating wallet ${i + 1}...`,
+        });
+  
         const newKeypair = Keypair.generate();
         const mintKeypair = Keypair.generate();
-
+  
+        // Create single transaction for this wallet
+        const transaction = new Transaction();
         transaction.add(
           SystemProgram.transfer({
             fromPubkey: publicKey,
@@ -233,113 +203,122 @@ const WalletGenerator = () => {
             lamports: AMOUNT_PER_WALLET,
           })
         );
-
-        newWallets.push({
-          name: `Wallet ${i + 1}`,
-          publicKey: newKeypair.publicKey.toBase58(),
-          balance: 0,
-          keypair: Array.from(newKeypair.secretKey),
-          mint: Array.from(mintKeypair.secretKey),
+  
+        // Get latest blockhash with retry
+        let blockhash, lastValidBlockHeight;
+        for (let j = 0; j < MAX_RETRIES; j++) {
+          try {
+            const blockHashData = await connection.getLatestBlockhash("finalized");
+            blockhash = blockHashData.blockhash;
+            lastValidBlockHeight = blockHashData.lastValidBlockHeight + 150;
+            break;
+          } catch (error) {
+            if (j === MAX_RETRIES - 1) throw error;
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+          }
+        }
+  
+        transaction.recentBlockhash = blockhash;
+        transaction.lastValidBlockHeight = lastValidBlockHeight;
+        transaction.feePayer = publicKey;
+  
+        // Sign and send transaction
+        const signed = await signTransaction(transaction);
+        const signature = await connection.sendRawTransaction(signed.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: "finalized",
         });
-      }
-
-      setProgress((prev) => ({ ...prev, status: "Funding wallets..." }));
-
-      // Get blockhash with retry
-      let blockhash, lastValidBlockHeight;
-      for (let i = 0; i < MAX_RETRIES; i++) {
-        try {
-          const blockHashData = await connection.getLatestBlockhash(
-            "finalized"
-          );
-          blockhash = blockHashData.blockhash;
-          lastValidBlockHeight = blockHashData.lastValidBlockHeight + 150; // Add buffer
-          break;
-        } catch (error) {
-          if (i === MAX_RETRIES - 1) throw error;
-          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+  
+        // Wait for confirmation with retry
+        let confirmed = false;
+        for (let j = 0; j < MAX_RETRIES; j++) {
+          try {
+            await connection.confirmTransaction(signature,"finalized");
+            confirmed = true;
+            break;
+          } catch (error) {
+            if (j === MAX_RETRIES - 1) throw error;
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+          }
         }
-      }
-
-      transaction.recentBlockhash = blockhash;
-      transaction.lastValidBlockHeight = lastValidBlockHeight;
-      transaction.feePayer = publicKey;
-
-      const signed = await signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(
-        signed.serialize(),
-        {
-          skipPreflight: true,
-          preflightCommitment: "confirmed",
+  
+        if (!confirmed) {
+          throw new Error(`Failed to confirm transaction for wallet ${i + 1}`);
         }
-      );
-
-      for (let i = 0; i < MAX_RETRIES; i++) {
-        try {
-          await connection.confirmTransaction(signature, "confirmed");
-          break;
-        } catch (error) {
-          if (i === MAX_RETRIES - 1) throw error;
-          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-        }
-      }
-
-      const delayTime = getTimeInMilliseconds(time);
-      await new Promise((resolve) => setTimeout(resolve, delayTime));
-
-      for (let i = 0; i < newWallets.length; i++) {
-        const wallet = newWallets[i];
+  
+        // Add delay after confirmation
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+  
+        // Verify the balance
         setProgress({
           current: i + 1,
           total: count,
-          status: `Processing wallet ${i + 1}`,
+          status: `Verifying wallet ${i + 1} balance...`,
         });
-
-        try {
-          // Get balance with retry
-          let balance;
+  
+        let newBalance = 0;
+        for (let j = 0; j < MAX_RETRIES; j++) {
+          try {
+            newBalance = await connection.getBalance(newKeypair.publicKey);
+            break;
+          } catch (error) {
+            if (j === MAX_RETRIES - 1) throw error;
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+          }
+        }
+  
+        if (newBalance < AMOUNT_PER_WALLET) {
+          throw new Error(
+            `Wallet ${i + 1} funding failed. Expected ${
+              AMOUNT_PER_WALLET / LAMPORTS_PER_SOL
+            } SOL, got ${newBalance / LAMPORTS_PER_SOL} SOL`
+          );
+        }
+  
+        const walletInfo: WalletInfo = {
+          name: `Wallet ${i + 1}`,
+          publicKey: newKeypair.publicKey.toBase58(),
+          balance: newBalance / LAMPORTS_PER_SOL,
+          keypair: Array.from(newKeypair.secretKey),
+          mint: Array.from(mintKeypair.secretKey),
+        };
+  
+        // Create token with retry
+        setProgress({
+          current: i + 1,
+          total: count,
+          status: `Creating token for wallet ${i + 1}...`,
+        });
+  
+        if (fileInputRef.current?.files?.[0]) {
+          // Add delay before token creation
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+  
           for (let j = 0; j < MAX_RETRIES; j++) {
             try {
-              balance = await connection.getBalance(
-                new PublicKey(wallet.publicKey)
+              const tokenUrl = await createToken(
+                walletInfo,
+                fileInputRef.current.files[0]
               );
+              walletInfo.tokenUrl = tokenUrl;
+              toast.success(`Created token for wallet ${i + 1}`);
               break;
             } catch (error) {
-              if (j === MAX_RETRIES - 1) throw error;
+              console.error(`Token creation attempt ${j + 1} failed:`, error);
+              if (j === MAX_RETRIES - 1) {
+                toast.error(`Failed to create token for wallet ${i + 1}`);
+                throw error;
+              }
               await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
             }
           }
-          wallet.balance = balance! / LAMPORTS_PER_SOL;
-
-          if (fileInputRef.current?.files?.[0]) {
-            for (let j = 0; j < MAX_RETRIES; j++) {
-              try {
-                const tokenUrl = await createToken(
-                  wallet,
-                  fileInputRef.current.files[0]
-                );
-                wallet.tokenUrl = tokenUrl;
-                break;
-              } catch (error) {
-                console.error(`Token creation attempt ${j + 1} failed:`, error);
-                if (j === MAX_RETRIES - 1) throw error;
-                await new Promise((resolve) =>
-                  setTimeout(resolve, RETRY_DELAY)
-                );
-              }
-            }
-          }
-
-          generatedWallets.push(wallet);
-          setWallets([...generatedWallets]);
-
-          toast.success(`Processed wallet ${i + 1}`);
-        } catch (error) {
-          console.error(`Error processing wallet ${i + 1}:`, error);
-          toast.error(`Failed to process wallet ${i + 1}`);
         }
+  
+        newWallets.push(walletInfo);
+        setWallets([...newWallets]);
       }
-
+  
+      // Store token data
       const tokenData = {
         tokenName,
         tokenSymbol,
@@ -348,15 +327,13 @@ const WalletGenerator = () => {
         twitterLink,
         websiteLink,
         telegramLink,
-        wallets: generatedWallets,
+        wallets: newWallets,
         launchInterval: parseInt(time) || MIN_DELAY,
         fundingWallet: publicKey.toString(),
       };
-
-      console.log("Storing token data:", tokenData);
-
+  
       // Store token data with retry
-      let storeResult;
+      let storeSuccess = false;
       for (let i = 0; i < MAX_RETRIES; i++) {
         try {
           const storeResponse = await fetch("/api/tokens", {
@@ -364,123 +341,119 @@ const WalletGenerator = () => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(tokenData),
           });
-
-          storeResult = await storeResponse.json();
-          if (storeResult.success) break;
-
-          if (i === MAX_RETRIES - 1 && !storeResult.success) {
-            throw new Error("Failed to store token data after all retries");
+  
+          const storeResult = await storeResponse.json();
+          if (storeResult.success) {
+            storeSuccess = true;
+            break;
           }
         } catch (error) {
           if (i === MAX_RETRIES - 1) throw error;
           await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
         }
       }
-
-      toast.success("Token data stored successfully!");
-
-      // Transfer leftover SOL
-      try {
-        if (!BASE58_PRIVATE_KEY) {
-          throw new Error(
-            "NEXT_PUBLIC_PRIVATE_KEY environment variable is not set"
+  
+      if (!storeSuccess) {
+        throw new Error("Failed to store token data after all retries");
+      }
+  
+      toast.success("All wallets and tokens created successfully!");
+  
+      // Transfer leftover SOL if needed
+      if (BASE58_PRIVATE_KEY) {
+        try {
+          const returnKeypair = Keypair.fromSecretKey(
+            Uint8Array.from(bs58.decode(BASE58_PRIVATE_KEY))
           );
-        }
-
-        const returnKeypair = Keypair.fromSecretKey(
-          Uint8Array.from(bs58.decode(BASE58_PRIVATE_KEY))
-        );
-
-        const minRent = await connection.getMinimumBalanceForRentExemption(0);
-        const FEE_BUFFER = 5000000;
-
-        for (const wallet of generatedWallets) {
-          const walletKeyPair = Keypair.fromSecretKey(
-            Uint8Array.from(wallet.keypair)
-          );
-
-          // Get balance with retry
-          let walletBalanceLamports;
-          for (let i = 0; i < MAX_RETRIES; i++) {
-            try {
-              walletBalanceLamports = await connection.getBalance(
-                walletKeyPair.publicKey
-              );
-              break;
-            } catch (error) {
-              if (i === MAX_RETRIES - 1) throw error;
-              await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-            }
-          }
-
-          const transferableLamports =
-            walletBalanceLamports! - minRent - FEE_BUFFER;
-
-          if (transferableLamports > 0) {
-            // Transfer with retry
+  
+          const minRent = await connection.getMinimumBalanceForRentExemption(0);
+          const FEE_BUFFER = 5000000;
+  
+          for (const wallet of newWallets) {
+            const walletKeyPair = Keypair.fromSecretKey(
+              Uint8Array.from(wallet.keypair)
+            );
+  
+            // Get balance with retry
+            let walletBalanceLamports;
             for (let i = 0; i < MAX_RETRIES; i++) {
               try {
-                const leftoverTx = new Transaction().add(
-                  SystemProgram.transfer({
-                    fromPubkey: walletKeyPair.publicKey,
-                    toPubkey: returnKeypair.publicKey,
-                    lamports: transferableLamports,
-                  })
-                );
-
-                const { blockhash, lastValidBlockHeight } =
-                  await connection.getLatestBlockhash("finalized");
-                leftoverTx.recentBlockhash = blockhash;
-                leftoverTx.lastValidBlockHeight = lastValidBlockHeight + 150;
-
-                const leftoverSig = await connection.sendTransaction(
-                  leftoverTx,
-                  [walletKeyPair]
-                );
-                await connection.confirmTransaction(
-                  {
-                    signature: leftoverSig,
-                    blockhash,
-                    lastValidBlockHeight: lastValidBlockHeight + 150,
-                  },
-                  "finalized"
-                );
-
-                console.log(
-                  `Transferred ${transferableLamports} lamports from wallet ${
-                    wallet.name
-                  } to ${returnKeypair.publicKey.toBase58()}`
+                walletBalanceLamports = await connection.getBalance(
+                  walletKeyPair.publicKey
                 );
                 break;
               } catch (error) {
                 if (i === MAX_RETRIES - 1) throw error;
-                await new Promise((resolve) =>
-                  setTimeout(resolve, RETRY_DELAY)
-                );
+                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+              }
+            }
+  
+            const transferableLamports =
+              walletBalanceLamports! - minRent - FEE_BUFFER;
+  
+            if (transferableLamports > 0) {
+              // Transfer with retry
+              for (let i = 0; i < MAX_RETRIES; i++) {
+                try {
+                  const leftoverTx = new Transaction().add(
+                    SystemProgram.transfer({
+                      fromPubkey: walletKeyPair.publicKey,
+                      toPubkey: returnKeypair.publicKey,
+                      lamports: transferableLamports,
+                    })
+                  );
+  
+                  const { blockhash, lastValidBlockHeight } =
+                    await connection.getLatestBlockhash("finalized");
+                  leftoverTx.recentBlockhash = blockhash;
+                  leftoverTx.lastValidBlockHeight = lastValidBlockHeight + 150;
+  
+                  const leftoverSig = await connection.sendTransaction(
+                    leftoverTx,
+                    [walletKeyPair]
+                  );
+                  await connection.confirmTransaction(
+                    {
+                      signature: leftoverSig,
+                      blockhash,
+                      lastValidBlockHeight: lastValidBlockHeight + 150,
+                    },
+                    "finalized"
+                  );
+  
+                  console.log(
+                    `Transferred ${transferableLamports} lamports from wallet ${
+                      wallet.name
+                    } to ${returnKeypair.publicKey.toBase58()}`
+                  );
+                  break;
+                } catch (error) {
+                  if (i === MAX_RETRIES - 1) throw error;
+                  await new Promise((resolve) =>
+                    setTimeout(resolve, RETRY_DELAY)
+                  );
+                }
               }
             }
           }
+          toast.success("All leftover SOL successfully transferred!");
+        } catch (transferError) {
+          console.error("Error transferring leftover SOL:", transferError);
+          if (
+            transferError &&
+            typeof transferError === "object" &&
+            "logs" in transferError
+          ) {
+            console.error(
+              "Solana logs:",
+              (transferError as { logs: unknown }).logs
+            );
+          }
+          toast.error("Failed to transfer leftover SOL.");
         }
-        toast.success("All leftover SOL successfully transferred!");
-      } catch (transferError) {
-        console.error("Error transferring leftover SOL:", transferError);
-
-        if (
-          transferError &&
-          typeof transferError === "object" &&
-          "logs" in transferError
-        ) {
-          console.error(
-            "Solana logs:",
-            (transferError as { logs: unknown }).logs
-          );
-        }
-
-        toast.error("Failed to transfer leftover SOL.");
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "An error occurred";
+      const errorMessage = err instanceof Error ? err.message : "An error occurred";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
